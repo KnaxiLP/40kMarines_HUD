@@ -230,11 +230,12 @@ hook.Add("HUDPaint", "DrawEntitiesInArea", function()
     local x = 0
     local crossairX, crossairY = 0,0
     for _, ent in ipairs(ents.GetAll()) do
-        x = x + 1
+        
         if IsEntityInScanArea(ent) then
             local pos = ent:LocalToWorld(ent:OBBCenter()):ToScreen() -- Aktuelle Position
             crossairX = pos.x
             crossairY = pos.y
+            x = x + 1
             draw.SimpleText(ent:GetClass() .. " | " .. x , "DermaDefault", pos.x, pos.y, color_white, TEXT_ALIGN_CENTER)
             DrawFill(ent, pos.x,pos.y)
             local disposition = ent:GetNWBool("SMS_disposition", 0)
