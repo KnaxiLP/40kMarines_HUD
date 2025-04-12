@@ -225,6 +225,7 @@ local function IsEntityInScanArea(ent)
        and screenPos.y >= scanArea.yMin and screenPos.y <= scanArea.yMax
 end
 local entitiesoutlinetabel = {}
+local scanenitys = {}
 hook.Add("HUDPaint", "DrawEntitiesInArea", function()
     entitiesoutlinetabel = {}
     local x = 0
@@ -254,11 +255,8 @@ hook.Add("HUDPaint", "DrawEntitiesInArea", function()
             
         end
     end
-    surface.SetDrawColor(255,255,255)
-    surface.SetMaterial(scan_crossair)
-    surface.DrawTexturedRectRotated(crossairX, crossairY,170,170,0)--0+360*RealTime()*0.1
-    surface.SetMaterial(scan_crossair_inner)
-    surface.DrawTexturedRectRotated(crossairX, crossairY,54,54,0+360*RealTime()*0.25)
+
+    crossairscanner(crossairX, crossairY)
     
     
 end)
@@ -389,9 +387,32 @@ function DrawFill(ent)
     cam.End3D()
 end
 
+local crossair_x, crossair_y = 0, 0
+function crossairscanner(crossairX, crossairY)
+
+    crossairX, crossairY = crossairscanner_move(crossairX,crossairY)
+    crossair_x, crossair_y = crossairX, crossairY
+    surface.SetDrawColor(255,255,255)
+    surface.SetMaterial(scan_crossair)
+    surface.DrawTexturedRectRotated(crossairX, crossairY,170,170,0)--0+360*RealTime()*0.1
+    surface.SetMaterial(scan_crossair_inner)
+    surface.DrawTexturedRectRotated(crossairX, crossairY,54,54,0+360*RealTime()*0.25)
+end
 
 
-
+function crossairscanner_move(newcrossairX, newcrossairY)
+    if newcrossairX == 0 or newcrossairY == 0 then
+        
+        newcrossairX = 200
+        newcrossairY = 500
+        return crossair_x+(newcrossairX-crossair_x)*0.1, crossair_y + (newcrossairY-crossair_y) * 0.1
+    end
+    if math.abs(newcrossairX-crossair_x) < 15 and math.abs(newcrossairY-crossair_y) < 15 then
+        
+        return newcrossairX, newcrossairY
+    end
+    return crossair_x+(newcrossairX-crossair_x)*0.1, crossair_y + (newcrossairY-crossair_y) * 0.1
+end
 
 
 
