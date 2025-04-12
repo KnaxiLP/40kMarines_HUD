@@ -73,6 +73,25 @@ hook.Add("HUDPaint", "SpaceMarinePaint", function()
     --end
 end)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--          ---------------------------------------------------------------------------------------------------------
+--          [                                           Rüstungs Anzeige                                            ]
+--          ---------------------------------------------------------------------------------------------------------
 local playerEntity, silhouetteEntity
 
 local playerEntity = nil
@@ -155,6 +174,27 @@ hook.Add("ShutDown", "CleanupClientsideModels", function()
     if IsValid(playerEntity2) then playerEntity2:Remove() end
 end)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--          ---------------------------------------------------------------------------------------------------------
+--          [                                           Scan Anzeige                                                ]
+--          ---------------------------------------------------------------------------------------------------------
 local scanArea = {
     xMin = ScrW() * 0.25, -- 25% von der linken Seite
     xMax = ScrW() * 0.75, -- 75% von der rechten Seite
@@ -345,65 +385,6 @@ function DrawFill(ent)
         render.SuppressEngineLighting(false)
     cam.End3D()
 end
-properties.Add("Change Color", {
-    MenuLabel = "Farbe ändern", -- Der Text, der im Menü angezeigt wird
-    Order = 100, -- Die Reihenfolge, in der die Eigenschaft im Menü angezeigt wird
-    MenuIcon = "icon16/color_swatch.png", -- Das Symbol, das im Menü angezeigt wird
-    -- Die Funktion, die aufgerufen wird, wenn die Eigenschaft ausgewählt wird
-    Action = function(ent)
-        if IsValid(ent) then
-            -- Ändere die Farbe der Entität zufällig
-            local newColor = Color(math.random(255), math.random(255), math.random(255))
-            ent:SetColor(newColor)
-        end
-    end
-})
-local function rb655_property_filter( filtor, ent, ply )
-	if ( type( filtor ) == "string" and filtor != ent:GetClass() ) then return false end
-	if ( type( filtor ) == "table" and !table.HasValue( filtor, ent:GetClass() ) ) then return false end
-	if ( type( filtor ) == "function" and !filtor( ent, ply ) ) then return false end
-
-	return true
-end
-function AddEntFunctionProperty( name, label, pos, filtor, func, icon )
-	properties.Add( "Change Color", {
-		MenuLabel = "Change Color",
-		MenuIcon = "icon16/color_swatch.png",
-		Order = 100,
-		Filter = function( self, ent, ply )
-			return true
-		end,
-        Action = function(ent)
-            if IsValid(ent) then
-                -- Ändere die Farbe der Entität zufällig
-                local newColor = Color(math.random(255), math.random(255), math.random(255))
-                ent:SetColor(newColor)
-            end
-        end,
-		Receive = function( self, length, ply )
-			local ent = net.ReadEntity()
-
-			if ( !IsValid( ply ) or !IsValid( ent ) or !self:Filter( ent, ply ) ) then return false end
-
-			func( ent, ply )
-		end
-	} )
-end
-
-AddEntFunctionProperty( "rb655_healthcharger_recharge", "dADAD", 655, "item_healthcharger", function( ent )
-	local n = ents.Create( "item_healthcharger" )
-	n:SetPos( ent:GetPos() )
-	n:SetAngles( ent:GetAngles() )
-	n:Spawn()
-	n:Activate()
-	n:EmitSound( "items/suitchargeok1.wav" )
-
-	undo.ReplaceEntity( ent, n )
-	cleanup.ReplaceEntity( ent, n )
-
-	ent:Remove()
-end, "icon16/arrow_refresh.png" )
--- Füge die ignite-Eigenschaft hinzu
 
 
 
@@ -417,6 +398,24 @@ end, "icon16/arrow_refresh.png" )
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--          ---------------------------------------------------------------------------------------------------------
+--          [                                           Context Menu Anzeige                                        ]
+--          ---------------------------------------------------------------------------------------------------------
 
 
 
