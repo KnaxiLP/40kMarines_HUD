@@ -208,6 +208,7 @@ local function IsValidEntity(ent)
     if ent:GetClass() == "gmod_hands" then return false end
     if ent:GetClass() == "physgun_beam" then return false end -- Hände ausblenden
     if ent:GetClass() == "class C_BaseFlex" then return false end -- Hände ausblenden
+    if ent:GetClass() == "class CLuaEffect" then return false end -- Hände ausblenden
     return true
 end
 
@@ -226,6 +227,7 @@ local function IsEntityInScanArea(ent)
 end
 local entitiesoutlinetabel = {}
 local scanenitys = {}
+local scanenitysseen = {}
 hook.Add("HUDPaint", "DrawEntitiesInArea", function()
     entitiesoutlinetabel = {}
     local x = 0
@@ -234,11 +236,9 @@ hook.Add("HUDPaint", "DrawEntitiesInArea", function()
         
         if IsEntityInScanArea(ent) then
             local pos = ent:LocalToWorld(ent:OBBCenter()):ToScreen() -- Aktuelle Position
-            crossairX = pos.x
-            crossairY = pos.y
             x = x + 1
-            draw.SimpleText(ent:GetClass() .. " | " .. x , "DermaDefault", pos.x, pos.y, color_white, TEXT_ALIGN_CENTER)
-            DrawFill(ent, pos.x,pos.y)
+            
+            
             local disposition = ent:GetNWBool("SMS_disposition", 0)
             local haloColor
 
@@ -250,13 +250,64 @@ hook.Add("HUDPaint", "DrawEntitiesInArea", function()
                 haloColor = Color(255, 0, 0)
             end
 
-            
+            local entdistance = ent:GetPos():Distance(LocalPlayer():GetPos())
             table.insert(entitiesoutlinetabel,{ent = ent, color = haloColor})
+
+            if not scanenitysseen[ent] and ent:GetNWFloat("SPaceMarine_ScanP", 0) < 1 then
+                table.insert(scanenitys, {
+                    ent = ent,
+                    distance = entdistance
+                })
+                scanenitysseen[ent] = true
+            end
+            table.sort(scanenitys, function(a, b)
+                if not IsValid(a.ent) or not IsValid(b.ent) then
+                    return false
+                end
+                return a.ent:GetPos():Distance(LocalPlayer():GetPos()) < b.ent:GetPos():Distance(LocalPlayer():GetPos())
+            end)
+        else
+            if scanenitysseen[ent] then
+                -- aus scanenitys entfernen
+                for i = #scanenitys, 1, -1 do
+                    if scanenitys[i].ent == ent then
+                        table.remove(scanenitys, i)
+                        break -- schneller abbrechen, wenn gefunden
+                    end
+                end
+                scanenitysseen[ent] = nil
+            end
+        end
+    end
+    table.sort(scanenitys, function(a, b)
+        if not IsValid(a.ent) or not IsValid(b.ent) then
+            return false
+        end
+        return a.ent:GetPos():Distance(LocalPlayer():GetPos()) < b.ent:GetPos():Distance(LocalPlayer():GetPos())
+    end)
+    for i, data in ipairs(scanenitys) do
+        local ent = data.ent
+        if IsEntityInScanArea(ent) then
+            
+            local dist = data.distance
+            local pos = ent:LocalToWorld(ent:OBBCenter()):ToScreen()
+            
+            --draw.SimpleText(ent:GetClass() .. " | " .. i , "DermaDefault", pos.x, pos.y, color_white, TEXT_ALIGN_CENTER)
+            
             
         end
     end
-
-    crossairscanner(crossairX, crossairY)
+    local ent
+    if not table.IsEmpty(scanenitys) and IsValid(scanenitys[1].ent) then
+        --print( tostring( (not table.IsEmpty(scanenitys))))
+        ent = scanenitys[1].ent
+        local pos = scanenitys[1].ent:LocalToWorld(scanenitys[1].ent:OBBCenter()):ToScreen()
+    
+        crossairX = pos.x
+        crossairY = pos.y
+    end
+    crossairscanner(crossairX, crossairY, ent)
+    ent = nil
     
     
 end)
@@ -388,9 +439,9 @@ function DrawFill(ent)
 end
 
 local crossair_x, crossair_y = 0, 0
-function crossairscanner(crossairX, crossairY)
+function crossairscanner(crossairX, crossairY, ent)
 
-    crossairX, crossairY = crossairscanner_move(crossairX,crossairY)
+    crossairX, crossairY = crossairscanner_move(crossairX,crossairY, ent)
     crossair_x, crossair_y = crossairX, crossairY
     surface.SetDrawColor(255,255,255)
     surface.SetMaterial(scan_crossair)
@@ -400,7 +451,7 @@ function crossairscanner(crossairX, crossairY)
 end
 
 
-function crossairscanner_move(newcrossairX, newcrossairY)
+function crossairscanner_move(newcrossairX, newcrossairY, ent)
     if newcrossairX == 0 or newcrossairY == 0 then
         
         newcrossairX = 200
@@ -408,10 +459,16 @@ function crossairscanner_move(newcrossairX, newcrossairY)
         return crossair_x+(newcrossairX-crossair_x)*0.1, crossair_y + (newcrossairY-crossair_y) * 0.1
     end
     if math.abs(newcrossairX-crossair_x) < 15 and math.abs(newcrossairY-crossair_y) < 15 then
-        
+        if not table.IsEmpty(scanenitys) and IsValid(ent) and ent:GetNWFloat("SPaceMarine_ScanP", 0 ) >= 1 then
+        table.remove(scanenitys, 1)
+        else
+            --print(" DA lu la | " .. tostring(not table.IsEmpty(scanenitys)) .. " " .. tostring(IsValid(ent)) .. " " .. tostring((ent:GetNWFloat("SPaceMarine_ScanP", 0)) >= 1) .. tostring(ent:GetNWFloat("SPaceMarine_ScanP", 0)))
+            local pos = ent:LocalToWorld(ent:OBBCenter()):ToScreen()
+            DrawFill(ent, pos.x,pos.y)
+        end
         return newcrossairX, newcrossairY
     end
-    return crossair_x+(newcrossairX-crossair_x)*0.1, crossair_y + (newcrossairY-crossair_y) * 0.1
+    return crossair_x+(newcrossairX-crossair_x)*0.075, crossair_y + (newcrossairY-crossair_y) * 0.075
 end
 
 
