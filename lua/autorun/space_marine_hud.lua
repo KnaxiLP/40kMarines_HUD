@@ -222,6 +222,14 @@ local function IsEntityInScanArea(ent)
     local ply = LocalPlayer()
     if ply:GetPos():DistToSqr(ent:GetPos()) >= 100 * 10000 then return false end
     -- Prüfen, ob das Entity innerhalb des definierten Bereichs liegt
+    local trace = util.TraceLine({
+        start = ply:GetShootPos(),  -- Startpunkt (Spielerposition)
+        endpos = pos,               -- Endpunkt (Entität)
+        filter = {ply, ent},        -- Filtert den Spieler und die Entität heraus, damit sie sich selbst nicht blockieren
+    })
+
+    -- Wenn der Trace ein Hindernis findet, besteht kein Sichtkontakt
+    if trace.Hit then return false end
     return screenPos.x >= scanArea.xMin and screenPos.x <= scanArea.xMax
        and screenPos.y >= scanArea.yMin and screenPos.y <= scanArea.yMax
 end
@@ -249,7 +257,9 @@ hook.Add("HUDPaint", "DrawEntitiesInArea", function()
             elseif disposition == 2 then
                 haloColor = Color(255, 0, 0)
             end
-
+            if ent:GetNWFloat("SPaceMarine_ScanP") < 1 then
+                haloColor = Color(255, 251, 0)
+            end
             local entdistance = ent:GetPos():Distance(LocalPlayer():GetPos())
             table.insert(entitiesoutlinetabel,{ent = ent, color = haloColor})
 
@@ -344,7 +354,7 @@ function DrawFill(ent)
     local maxHealth = ent.GetMaxHealth and ent:GetMaxHealth() or 100
     if ent:GetNWFloat("SPaceMarine_ScanP", 0) < 1 then
         visibilityPercent = ent:GetNWFloat("SPaceMarine_ScanP", 0)
-        ent:SetNWFloat("SPaceMarine_ScanP", ent:GetNWFloat("SPaceMarine_ScanP", 0)+0.01)
+        ent:SetNWFloat("SPaceMarine_ScanP", ent:GetNWFloat("SPaceMarine_ScanP", 0)+0.05)
     else
         local visibilityPercent = ent:GetNWFloat("SPaceMarine_ScanP", 0)
         return
@@ -420,7 +430,9 @@ function DrawFill(ent)
         elseif ent:GetNWBool("SMS_disposition", 0) == 2 then
             render.SetColorModulation(1, 0, 0, 0.486) -- Rot
         end
-        
+        if ent:GetNWFloat("SPaceMarine_ScanP") < 1 then
+            render.SetColorModulation(1, 1, 0, 0.486)
+        end
         render.MaterialOverride(Material("warhammermaterials/holoprojection"))
         mdl:DrawModel()
         render.PopCustomClipPlane()
