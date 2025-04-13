@@ -209,6 +209,7 @@ local function IsValidEntity(ent)
     if ent:GetClass() == "physgun_beam" then return false end -- Hände ausblenden
     if ent:GetClass() == "class C_BaseFlex" then return false end -- Hände ausblenden
     if ent:GetClass() == "class CLuaEffect" then return false end -- Hände ausblenden
+    if ent:GetClass() == "env_sprite" then return false end -- Hände ausblenden
     return true
 end
 
@@ -280,6 +281,12 @@ hook.Add("HUDPaint", "DrawEntitiesInArea", function()
             if scanenitysseen[ent] then
                 -- aus scanenitys entfernen
                 for i = #scanenitys, 1, -1 do
+                    local data = scanenitys[i]
+                    if not IsValid(data.ent) then
+                        table.remove(scanenitys, i)
+                        scanenitysseen[data.ent] = nil
+                        break
+                    end
                     if scanenitys[i].ent == ent then
                         table.remove(scanenitys, i)
                         break -- schneller abbrechen, wenn gefunden
@@ -288,6 +295,7 @@ hook.Add("HUDPaint", "DrawEntitiesInArea", function()
                 scanenitysseen[ent] = nil
             end
         end
+        
     end
     table.sort(scanenitys, function(a, b)
         if not IsValid(a.ent) or not IsValid(b.ent) then
@@ -302,7 +310,7 @@ hook.Add("HUDPaint", "DrawEntitiesInArea", function()
             local dist = data.distance
             local pos = ent:LocalToWorld(ent:OBBCenter()):ToScreen()
             
-            --draw.SimpleText(ent:GetClass() .. " | " .. i , "DermaDefault", pos.x, pos.y, color_white, TEXT_ALIGN_CENTER)
+            draw.SimpleText(ent:GetClass() .. " | " .. i , "DermaDefault", pos.x, pos.y, color_white, TEXT_ALIGN_CENTER)
             
             
         end
@@ -316,7 +324,9 @@ hook.Add("HUDPaint", "DrawEntitiesInArea", function()
         crossairX = pos.x
         crossairY = pos.y
     end
+    if table.IsEmpty(scanenitys) or IsValid(scanenitys[1].ent) then
     crossairscanner(crossairX, crossairY, ent)
+    end
     ent = nil
     
     

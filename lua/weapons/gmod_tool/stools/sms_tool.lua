@@ -11,10 +11,10 @@ function TOOL:LeftClick(trace, attach)
     local entityName = self:GetClientInfo("entity_name")
     local dispostion = math.Round(self:GetClientNumber("disposition"))  -- Holen des Werts vom Client
     print("Entity Name: " .. entityName .. dispostion)  -- Zum Debuggen: Den Wert im Chat ausgeben
-
+ 
     -- Entität an der Position des Traces spawnen
     local entity = ents.Create(entityName)
-
+    
     if IsValid(entity) then
         -- Position der Entität setzen (An den Trace-Hitpoint)
         entity:SetPos(trace.HitPos + trace.HitNormal * 16) -- 16 Einheiten nach oben verschieben, um sie nicht im Boden zu spawnen
