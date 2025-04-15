@@ -2,9 +2,10 @@
 local hudoutline = Material("hud_outline.png")
 local scan_crossair = Material("g23.png")
 local scan_crossair_inner = Material("path4.png")
+local dangersignal = Material("damgersing.png")
 hook.Add("HUDPaint", "SpaceMarinePaint", function()
     local ply = LocalPlayer()
-    --if ply:GetNWBool("SpaceMarineHUD", false) then
+    --if ply:GetNW2Bool("SpaceMarineHUD", false) then
        
         local maxarmor = ply:GetMaxArmor()
         local armor =  ply:Armor()
@@ -21,7 +22,7 @@ hook.Add("HUDPaint", "SpaceMarinePaint", function()
         surface.DrawRect(100,100,100,100)
         local hp = math.max(1, ply:Health()) -- Keine negativen HP-Werte
         local maxHp = ply:GetMaxHealth()
-        local screenW, screenH = ScrW(), ScrH()
+        local screeNW2, screenH = ScrW(), ScrH()
         if hp <= ply:GetMaxHealth()*0.25 then
             local alpha = math.abs(math.sin(CurTime() * 5)) * 255 
             surface.SetDrawColor(255,6,0,alpha)
@@ -187,20 +188,9 @@ end)
 
 
 
-
-
-
-
-
 --          ---------------------------------------------------------------------------------------------------------
 --          [                                           Scan Anzeige                                                ]
 --          ---------------------------------------------------------------------------------------------------------
-local scanArea = {
-    xMin = ScrW() * 0.25, -- 25% von der linken Seite
-    xMax = ScrW() * 0.75, -- 75% von der rechten Seite
-    yMin = ScrH() * 0.25, -- 25% von oben
-    yMax = ScrH() * 0.75  -- 75% von unten
-}
 
 local function IsValidEntity(ent)
     if not IsValid(ent) then return false end
@@ -215,7 +205,13 @@ end
 
 local function IsEntityInScanArea(ent)
     if not IsValidEntity(ent) then return false end
-
+    local scanArea = {
+        xMin = ScrW() * 0.1, -- 25% von der linken Seite
+        xMax = ScrW() * 0.9, -- 75% von der rechten Seite
+        yMin = ScrH() * 0.1, -- 25% von oben
+        yMax = ScrH() * 0.9,  -- 75% von unten
+    }
+    
     local pos = ent:LocalToWorld(ent:OBBCenter()) -- Mittelpunkt des Entities
     local screenPos = pos:ToScreen() -- Weltposition zu Bildschirm umwandeln
 
@@ -245,10 +241,15 @@ hook.Add("HUDPaint", "DrawEntitiesInArea", function()
         
         if IsEntityInScanArea(ent) then
             local pos = ent:LocalToWorld(ent:OBBCenter()):ToScreen() -- Aktuelle Position
+            local dist = LocalPlayer():GetPos():Distance(ent:GetPos())
+            local offsetZ = math.Clamp(dist * 0.075, 10, 100) -- passt sich an, aber nicht unendlich
+            local scale = math.Clamp(dist/400, 0.4, 3)
+            local headPos = ent:GetPos() + Vector(0, 0, ent:OBBMaxs().z + offsetZ)
+            local headscreenPos = headPos:ToScreen()
             x = x + 1
             
-            
-            local disposition = ent:GetNWBool("SMS_disposition", 0)
+            --draw.SimpleText(ent:GetClass(), CenterPrintText, pos.x,pos.y,Color(255,255,255),TEXT_ALIGN_CENTER,TEXT_ALIGN_CENTER)
+            local disposition = ent:GetNW2Int("SMS_disposition", 0)
             local haloColor
 
             if disposition == 0 then
@@ -256,15 +257,29 @@ hook.Add("HUDPaint", "DrawEntitiesInArea", function()
             elseif disposition == 1 then
                 haloColor = Color(0, 255, 0)
             elseif disposition == 2 then
+                if ent:GetNW2Float("SPaceMarine_ScanP") > 1 then
+                    surface.SetDrawColor(255,255,255)
+                    if ent:GetClass() == "class C_ClientRagdoll" then
+                        surface.SetDrawColor(255,255,255, 100)
+                    end
+                    surface.SetMaterial(dangersignal)
+                    surface.DrawTexturedRect(headscreenPos.x - (45/scale)/2 + (((ScrW()/2)-pos.x)*0.05),headscreenPos.y+15*scale, 45/scale, 45/scale)
+                end
                 haloColor = Color(255, 0, 0)
             end
-            if ent:GetNWFloat("SPaceMarine_ScanP") < 1 then
+            
+            if ent:GetNW2Float("SPaceMarine_ScanP") < 1 then
                 haloColor = Color(255, 251, 0)
+            else 
+                print(ent:GetNW2Bool("SMS_showinformation", false))
+                if dist < 200 and ent:GetNW2Bool("SMS_showinformation", false) then
+                    drawinformation(ent, pos, headscreenPos, LocalPlayer())
+                end
             end
             local entdistance = ent:GetPos():Distance(LocalPlayer():GetPos())
             table.insert(entitiesoutlinetabel,{ent = ent, color = haloColor})
 
-            if not scanenitysseen[ent] and ent:GetNWFloat("SPaceMarine_ScanP", 0) < 1 then
+            if not scanenitysseen[ent] and ent:GetNW2Float("SPaceMarine_ScanP", 0) < 1 then
                 table.insert(scanenitys, {
                     ent = ent,
                     distance = entdistance
@@ -310,9 +325,6 @@ hook.Add("HUDPaint", "DrawEntitiesInArea", function()
             local dist = data.distance
             local pos = ent:LocalToWorld(ent:OBBCenter()):ToScreen()
             
-            draw.SimpleText(ent:GetClass() .. " | " .. i , "DermaDefault", pos.x, pos.y, color_white, TEXT_ALIGN_CENTER)
-            
-            
         end
     end
     local ent
@@ -326,6 +338,8 @@ hook.Add("HUDPaint", "DrawEntitiesInArea", function()
     end
     if table.IsEmpty(scanenitys) or IsValid(scanenitys[1].ent) then
     crossairscanner(crossairX, crossairY, ent)
+    else
+        scanenitys = {}
     end
     ent = nil
     
@@ -362,11 +376,11 @@ function DrawFill(ent)
     local visibilityPercent
     local health = ent:Health()
     local maxHealth = ent.GetMaxHealth and ent:GetMaxHealth() or 100
-    if ent:GetNWFloat("SPaceMarine_ScanP", 0) < 1 then
-        visibilityPercent = ent:GetNWFloat("SPaceMarine_ScanP", 0)
-        ent:SetNWFloat("SPaceMarine_ScanP", ent:GetNWFloat("SPaceMarine_ScanP", 0)+0.05)
+    if ent:GetNW2Float("SPaceMarine_ScanP", 0) < 1 then
+        visibilityPercent = ent:GetNW2Float("SPaceMarine_ScanP", 0)
+        ent:SetNW2Float("SPaceMarine_ScanP", ent:GetNW2Float("SPaceMarine_ScanP", 0)+0.05)
     else
-        local visibilityPercent = ent:GetNWFloat("SPaceMarine_ScanP", 0)
+        local visibilityPercent = ent:GetNW2Float("SPaceMarine_ScanP", 0)
         return
     end
     local modelPath = ent:GetModel()
@@ -433,14 +447,14 @@ function DrawFill(ent)
         render.PushCustomClipPlane(clipNormal, -1*entPos.z + clipHeight)
 
         render.SetBlend(1)
-        if ent:GetNWBool("SMS_disposition", 0) == 0 then
+        if ent:GetNW2Int("SMS_disposition", 0) == 0 then
             render.SetColorModulation(1, 1, 0, 0.486) -- Gelb
-        elseif ent:GetNWBool("SMS_disposition", 0) == 1 then
+        elseif ent:GetNW2Int("SMS_disposition", 0) == 1 then
             render.SetColorModulation(0, 1, 0, 0.486) -- Grün
-        elseif ent:GetNWBool("SMS_disposition", 0) == 2 then
+        elseif ent:GetNW2Int("SMS_disposition", 0) == 2 then
             render.SetColorModulation(1, 0, 0, 0.486) -- Rot
         end
-        if ent:GetNWFloat("SPaceMarine_ScanP") < 1 then
+        if ent:GetNW2Float("SPaceMarine_ScanP") < 1 then
             render.SetColorModulation(1, 1, 0, 0.486)
         end
         render.MaterialOverride(Material("warhammermaterials/holoprojection"))
@@ -462,7 +476,10 @@ end
 
 local crossair_x, crossair_y = 0, 0
 function crossairscanner(crossairX, crossairY, ent)
-
+    --print(crossairX)
+    if crossairX == nil then
+        scanenitys = {}
+    end
     crossairX, crossairY = crossairscanner_move(crossairX,crossairY, ent)
     crossair_x, crossair_y = crossairX, crossairY
     surface.SetDrawColor(255,255,255)
@@ -481,10 +498,10 @@ function crossairscanner_move(newcrossairX, newcrossairY, ent)
         return crossair_x+(newcrossairX-crossair_x)*0.1, crossair_y + (newcrossairY-crossair_y) * 0.1
     end
     if math.abs(newcrossairX-crossair_x) < 15 and math.abs(newcrossairY-crossair_y) < 15 then
-        if not table.IsEmpty(scanenitys) and IsValid(ent) and ent:GetNWFloat("SPaceMarine_ScanP", 0 ) >= 1 then
+        if not table.IsEmpty(scanenitys) and IsValid(ent) and ent:GetNW2Float("SPaceMarine_ScanP", 0 ) >= 1 then
         table.remove(scanenitys, 1)
         else
-            --print(" DA lu la | " .. tostring(not table.IsEmpty(scanenitys)) .. " " .. tostring(IsValid(ent)) .. " " .. tostring((ent:GetNWFloat("SPaceMarine_ScanP", 0)) >= 1) .. tostring(ent:GetNWFloat("SPaceMarine_ScanP", 0)))
+            --print(" DA lu la | " .. tostring(not table.IsEmpty(scanenitys)) .. " " .. tostring(IsValid(ent)) .. " " .. tostring((ent:GetNW2Float("SPaceMarine_ScanP", 0)) >= 1) .. tostring(ent:GetNW2Float("SPaceMarine_ScanP", 0)))
             local pos = ent:LocalToWorld(ent:OBBCenter()):ToScreen()
             DrawFill(ent, pos.x,pos.y)
         end
@@ -497,7 +514,106 @@ end
 
 
 
+    
+--[[ Addon: Server-Side Ragdolls for NPCs
+-- Autor: Dein Name
+-- Beschreibung: Erstellt serverseitige Ragdolls für NPCs beim Tod und verhindert clientseitige Ragdolls.
 
+
+
+-- Funktion, um Client-Ragdoll zu unterdrücken und stattdessen eine Server-Ragdoll zu spawnen
+hook.Add("OnNPCKilled", "ReplaceClientRagdollWithServerRagdoll", function(npc, attacker, inflictor)
+    print("Debug")
+    if not IsValid(npc) then return end
+    print("Debug | " .. tostring(npc:GetRagdollOwner()))
+    -- Falls bereits ein Ragdoll existiert, lösche ihn sicherheitshalber
+    if IsValid(npc:GetRagdollOwner()) then
+        print("Debug")
+        npc:GetRagdollOwner():Remove()
+    end
+
+    -- Server-Ragdoll erstellen
+    local ragdoll = ents.Create("prop_ragdoll")
+    if not IsValid(ragdoll) then return end
+
+    ragdoll:SetPos(npc:GetPos())
+    ragdoll:SetAngles(npc:GetAngles())
+    ragdoll:SetModel(npc:GetModel())
+    ragdoll:SetSkin(npc:GetSkin() or 0)
+    ragdoll:SetColor(npc:GetColor())
+    ragdoll:SetMaterial(npc:GetMaterial())
+
+    ragdoll:SetCollisionGroup(COLLISION_GROUP_DEBRIS_TRIGGER)
+    ragdoll:Spawn()
+
+    -- Animation und Position übernehmen
+    local npcPhys = npc:GetPhysicsObject()
+    for i = 0, ragdoll:GetPhysicsObjectCount() - 1 do
+        local physObj = ragdoll:GetPhysicsObjectNum(i)
+        if IsValid(physObj) then
+            local bonePos, boneAng = npc:GetBonePosition(ragdoll:TranslatePhysBoneToBone(i))
+            if bonePos and boneAng then
+                physObj:SetPos(bonePos)
+                physObj:SetAngles(boneAng)
+                physObj:Wake()
+            end
+        end
+    end
+    print("---------------")
+end)
+
+hook.Add( "CreateClientsideRagdoll", "fade_out_corpses", function( entity, ragdoll )
+	ragdoll:Remove() -- Set the magic internal variable that will cause the ragdoll to immediately start fading out
+end )
+]]
+
+
+
+hook.Add("CreateClientsideRagdoll", "nvclientragnew", function(entity, ragdoll)
+    ragdoll:SetNW2Int("SMS_disposition", entity:GetNW2Int("SMS_disposition", 0))
+    ragdoll:SetNW2String("SMS_InfoText", entity:GetNW2String("SMS_InfoText", "[]"))
+end)
+
+function drawinformation(ent, screenpos, pos, ply)
+    if screenpos.x < ScrW() * 0.40 or screenpos.x > ScrW() * 0.60 or screenpos.y < ScrH() * 0.40 or screenpos.y > ScrH() * 0.60 then return end
+    surface.SetFont("HudSelectionText")
+    surface.SetDrawColor(255,255,255)
+    pos.y = pos.y + 75
+    pos.x = pos.x + 100
+    surface.DrawLine(pos.x - 100,pos.y,pos.x,pos.y-75)
+    surface.DrawLine(pos.x,pos.y-75,pos.x +200,pos.y-75)
+    surface.SetDrawColor(0,0,0,101)
+    surface.DrawRect(pos.x,pos.y-72,200,200)
+    surface.SetTextColor(255,255,255)
+    surface.SetTextPos(pos.x, pos.y - 70)
+    surface.DrawText("Gesinnung: ")
+
+    local gesinnung
+    if ent:GetNW2Int("SMS_disposition", 0) == 0 then
+        gesinnung = "Neutral"
+        surface.SetTextColor(255,255,0)
+    elseif ent:GetNW2Int("SMS_disposition", 0) == 1 then
+        gesinnung = "Freundlich"
+        surface.SetTextColor(0,255,0)
+    elseif ent:GetNW2Int("SMS_disposition", 0) == 2 then
+        gesinnung = "Feindlich"
+        surface.SetTextColor(255,0,0)
+    end
+    surface.SetTextPos(pos.x + 90, pos.y - 70)
+    surface.DrawText(gesinnung)
+    pos.y = pos.y -55
+    local rawdata = ent:GetNW2String("SMS_InfoText", "[]")
+    local infotextarray = util.JSONToTable(rawdata) or {}
+
+    surface.SetTextColor(255,255,255)
+
+
+    for i, line in ipairs(infotextarray) do
+        surface.SetTextColor(255, 255, 255)
+        surface.SetTextPos(pos.x, pos.y + (i - 1) * 15)
+        surface.DrawText(line)
+    end
+end
 
 
 
@@ -602,14 +718,14 @@ local function OpenCustomEntityMenu(ent)
     local disposition = vgui.Create("DNumSlider")
     disposition:SetMin(0)
     disposition:SetMax(2)
-    disposition:SetValue(ent:GetNWFloat("SMS_disposition", -1))
+    disposition:SetValue(ent:GetNW2Float("SMS_disposition", -1))
     disposition:SetDecimals(0)
     AddRowToCategory(listGeneral, "Gesinnung", disposition)
 
     
     local function dispositionApplyValue(value)
-        ent:SetNWFloat("SMS_disposition", value)
-        --print("Debug 2" .. ent:GetNWFloat("SMS_disposition", -1).. "  " .. value)
+        ent:SetNW2Float("SMS_disposition", value)
+        --print("Debug 2" .. ent:GetNW2Float("SMS_disposition", -1).. "  " .. value)
     end
     disposition.OnValueChanged = function(self, value)
         local roundedValue = math.Round(value)
@@ -622,14 +738,14 @@ local function OpenCustomEntityMenu(ent)
     local scananimation = vgui.Create("DNumSlider")
     scananimation:SetMin(0)
     scananimation:SetMax(1)
-    scananimation:SetValue(ent:GetNWFloat("SPaceMarine_ScanP", -1))
+    scananimation:SetValue(ent:GetNW2Float("SPaceMarine_ScanP", -1))
     scananimation:SetDecimals(0)
     AddRowToCategory(listGeneral, "Scan Animation Timer", scananimation)
 
     
     local function scananimationApplyValue(value)
-        ent:SetNWFloat("SPaceMarine_ScanP", value)
-        --print("Debug 2" .. ent:GetNWFloat("SMS_disposition", -1).. "  " .. value)
+        ent:SetNW2Float("SPaceMarine_ScanP", value)
+        --print("Debug 2" .. ent:GetNW2Float("SMS_disposition", -1).. "  " .. value)
     end
     scananimation.OnValueChanged = function(self, value)
         local roundedValue = math.Round(value)

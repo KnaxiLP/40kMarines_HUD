@@ -1,66 +1,101 @@
+TOOL.Mode = "sms_tool"
 TOOL.Category = "Testo"
-TOOL.Name = "Spawn Entity mit NW Var"
-TOOL.ClientConVar[ "entity_name" ] = "npc_citizen"
-TOOL.ClientConVar[ "disposition" ] = 0
+TOOL.Name = "Spawn Entity mit NW2 Var"
+TOOL.ClientConVar["entity_name"] = "npc_citizen"
+TOOL.ClientConVar["disposition"] = 0
+TOOL.ClientConVar["weapon_class"] = ""
+TOOL.ClientConVar["infomationshow"] = 0
+for i = 1, 12 do
+    TOOL.ClientConVar["infotext" .. i] = ""
+end
 -- Entität spawnen und Netzwerkwert setzen
-function TOOL:LeftClick(trace, attach)
-    -- Überprüfen, ob der Trace (Ziel) gültig ist
-    if !trace.HitPos then return false end
+function TOOL:LeftClick(trace)
+    if not trace.HitPos then return false end
     
-    -- Den Entity-Namen aus der Textbox des Panels holen
     local entityName = self:GetClientInfo("entity_name")
-    local dispostion = math.Round(self:GetClientNumber("disposition"))  -- Holen des Werts vom Client
-    print("Entity Name: " .. entityName .. dispostion)  -- Zum Debuggen: Den Wert im Chat ausgeben
- 
-    -- Entität an der Position des Traces spawnen
-    local entity = ents.Create(entityName)
+    local disposition = math.Round(self:GetClientNumber("disposition"))
+    local weaponClass = self:GetClientInfo("weapon_class")
     
-    if IsValid(entity) then
-        -- Position der Entität setzen (An den Trace-Hitpoint)
-        entity:SetPos(trace.HitPos + trace.HitNormal * 16) -- 16 Einheiten nach oben verschieben, um sie nicht im Boden zu spawnen
-        entity:Spawn()
+    local entity = ents.Create(entityName)
+    if not IsValid(entity) then return false end
 
-        -- Netzwerkwert setzen
-        entity:SetNWBool("SMS_disposition", dispostion) -- Beispiel: Setzen einer Custom NW-Variable
+    entity:SetPos(trace.HitPos + trace.HitNormal * 16)
+    entity:Spawn()
 
-        -- Entität zur Undo-Liste hinzufügen
-        undo.Create("Spawned Entity")
-            undo.AddEntity(entity)  -- Entität hinzufügen
-            undo.SetPlayer(self:GetOwner())  -- Setzt den Spieler, der das Tool verwendet, als Verantwortlichen für das Undo
-        undo.Finish()
-
-        return true
+    -- Setze Netzwert (z. B. für AI-Erkennung)
+    entity:SetNW2Int("SMS_disposition", disposition)
+    local infotextarray = {}
+    for i = 1, 12 do
+        infotextarray[i] = self:GetClientInfo("infotext" .. i)
+        --local key = "infotext" .. i
+    --local value = self:GetClientInfo(key)
+    --infotextarray[i] = value
+    --print("[" .. key .. "] = " .. value)
     end
-    return false
+    
+    entity:SetNW2String("SMS_InfoText", util.TableToJSON(infotextarray))
+    entity:SetNW2Bool("SMS_showinformation", self:GetClientInfo("infomationshow"))
+    -- Waffe setzen, nur wenn explizit angegeben
+    if entity:IsNPC() and weaponClass ~= "" then
+        entity:Give(weaponClass)
+    end
+
+    -- Undo-Funktion
+    undo.Create("Spawned Entity")
+        undo.AddEntity(entity)
+        undo.SetPlayer(self:GetOwner())
+    undo.Finish()
+
+    return true
 end
 
-function TOOL:Think()
-    -- Hier könnte man eine Update-Logik implementieren, falls benötigt
-end
+-- Waffenauswahl für ComboBox
+function GetNPCWeapons()
+    local weaponsList = {
+        "", -- Leerer Eintrag = Standardwaffe des NPC
+        "weapon_crowbar",
+        "weapon_pistol",
+        "weapon_357",
+        "weapon_smg1",
+        "weapon_ar2",
+        "weapon_crossbow",
+        "weapon_rpg",
+        "weapon_shotgun",
+        "weapon_stunstick",
+        "weapon_frag"
+    }
 
--- Das Steuerpanel für das Tool
-function TOOL.BuildCPanel(CPanel)
-    -- TextBox für den Entity-Namen
-    CPanel:TextEntry("Entity Name", "sms_tool_entity_name")  -- Der Wert, der vom Client übergeben wird, hier festgelegt
-    CPanel:ControlHelp("The entity name of the desired NPC or entity. You can use NPCs and entities from other addons as well.")
-
-    -- Slider hinzufügen
-    local slider = CPanel:NumSlider("Disposition", "sms_tool_disposition", 0, 2, 0)  -- Slider von 0 bis 2
-    slider:SetDecimals(0)  -- Keine Dezimalstellen anzeigen
-    slider:SetValue(0)  -- Standardwert auf 0 setzen
-
-    -- Event-Handler für Wertänderungen
-    slider.OnValueChanged = function(self, value)
-        local roundedValue = math.Round(value)  -- Runden des Wertes
-        if roundedValue ~= value then
-            self:SetValue(roundedValue)  -- Setze den Wert des Schiebereglers auf den gerundeten Wert
+    for _, weapon in ipairs(weapons.GetList()) do
+        if weapon.ClassName and not table.HasValue(weaponsList, weapon.ClassName) then
+            table.insert(weaponsList, weapon.ClassName)
         end
     end
 
-    -- Optional: Hilfe-Text für den Slider
-    CPanel:ControlHelp("Set the disposition value (0-2).")
+    return weaponsList
 end
 
+-- UI Panel
+function TOOL.BuildCPanel(CPanel)
+    CPanel:TextEntry("Entity Name", "sms_tool_entity_name")
+    CPanel:NumSlider("Disposition", "sms_tool_disposition", 0, 2, 0)
+
+    local combo = CPanel:ComboBox("Wähle Waffe (leer = Standard)", "sms_tool_weapon_class")
+    for _, weap in ipairs(GetNPCWeapons()) do
+        combo:AddChoice(weap == "" and "Standard (Q-Menü)" or weap, weap)
+    end
+
+    CPanel:Help("Spawnt eine Entität mit Standard- oder gewählter Waffe und setzt einen Netzwerkwert für Disposition.")
+
+    CPanel:CheckBox("Show Information", "sms_tool_infomationshow")
+    for i = 1, 12 do
+        CPanel:AddControl("TextBox", {
+            Label = "Zeile " .. i,
+            Command = "sms_tool_infotext" .. i
+        })
+        
+    end
+
+end
 
 
 

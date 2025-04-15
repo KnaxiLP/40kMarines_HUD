@@ -46,7 +46,7 @@ if CLIENT then
 
     hook.Add("HUDPaint", "DrawFunkHUD", function()
         local ply = LocalPlayer()
-        if ply:GetNWBool("SpaceMarineHUD", false) then
+        if ply:GetNW2Bool("SpaceMarineHUD", false) then
             surface.SetDrawColor(34,145,0,191.25)
             surface.DrawOutlinedRect(ScrW()-ScrW()/7, 100,158,30,5)
             surface.DrawOutlinedRect(ScrW()-ScrW()/7, 100+25,158,30,5)
