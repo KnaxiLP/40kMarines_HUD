@@ -3,6 +3,8 @@ local hudoutline = Material("hud_outline.png")
 local scan_crossair = Material("g23.png")
 local scan_crossair_inner = Material("path4.png")
 local dangersignal = Material("damgersing.png")
+
+
 hook.Add("HUDPaint", "SpaceMarinePaint", function()
     local ply = LocalPlayer()
     --if ply:GetNW2Bool("SpaceMarineHUD", false) then
@@ -192,6 +194,8 @@ end)
 --          [                                           Scan Anzeige                                                ]
 --          ---------------------------------------------------------------------------------------------------------
 
+local enittyscanpersentage = {}
+
 local function IsValidEntity(ent)
     if not IsValid(ent) then return false end
     if ent:IsWeapon() or ent:IsPlayer() then return false end -- Waffen und Spieler ignorieren
@@ -230,6 +234,9 @@ local function IsEntityInScanArea(ent)
     return screenPos.x >= scanArea.xMin and screenPos.x <= scanArea.xMax
        and screenPos.y >= scanArea.yMin and screenPos.y <= scanArea.yMax
 end
+
+
+
 local entitiesoutlinetabel = {}
 local scanenitys = {}
 local scanenitysseen = {}
@@ -257,7 +264,7 @@ hook.Add("HUDPaint", "DrawEntitiesInArea", function()
             elseif disposition == 1 then
                 haloColor = Color(0, 255, 0)
             elseif disposition == 2 then
-                if ent:GetNW2Float("SPaceMarine_ScanP") > 1 then
+                if getenittyscanpersentage(ent) > 1 then
                     surface.SetDrawColor(255,255,255)
                     if ent:GetClass() == "class C_ClientRagdoll" then
                         surface.SetDrawColor(255,255,255, 100)
@@ -268,7 +275,7 @@ hook.Add("HUDPaint", "DrawEntitiesInArea", function()
                 haloColor = Color(255, 0, 0)
             end
             
-            if ent:GetNW2Float("SPaceMarine_ScanP") < 1 then
+            if getenittyscanpersentage(ent) < 1 then
                 haloColor = Color(255, 251, 0)
             else 
                 print(ent:GetNW2Bool("SMS_showinformation", false))
@@ -279,7 +286,7 @@ hook.Add("HUDPaint", "DrawEntitiesInArea", function()
             local entdistance = ent:GetPos():Distance(LocalPlayer():GetPos())
             table.insert(entitiesoutlinetabel,{ent = ent, color = haloColor})
 
-            if not scanenitysseen[ent] and ent:GetNW2Float("SPaceMarine_ScanP", 0) < 1 then
+            if not scanenitysseen[ent] and getenittyscanpersentage(ent) < 1 then
                 table.insert(scanenitys, {
                     ent = ent,
                     distance = entdistance
@@ -376,11 +383,11 @@ function DrawFill(ent)
     local visibilityPercent
     local health = ent:Health()
     local maxHealth = ent.GetMaxHealth and ent:GetMaxHealth() or 100
-    if ent:GetNW2Float("SPaceMarine_ScanP", 0) < 1 then
-        visibilityPercent = ent:GetNW2Float("SPaceMarine_ScanP", 0)
-        ent:SetNW2Float("SPaceMarine_ScanP", ent:GetNW2Float("SPaceMarine_ScanP", 0)+0.05)
+    if getenittyscanpersentage(ent) < 1 then
+        visibilityPercent = getenittyscanpersentage(ent)
+        setenittyscanpersentage(ent, getenittyscanpersentage(ent)+0.05)
     else
-        local visibilityPercent = ent:GetNW2Float("SPaceMarine_ScanP", 0)
+        local visibilityPercent = getenittyscanpersentage(ent)
         return
     end
     local modelPath = ent:GetModel()
@@ -454,7 +461,7 @@ function DrawFill(ent)
         elseif ent:GetNW2Int("SMS_disposition", 0) == 2 then
             render.SetColorModulation(1, 0, 0, 0.486) -- Rot
         end
-        if ent:GetNW2Float("SPaceMarine_ScanP") < 1 then
+        if getenittyscanpersentage(ent) < 1 then
             render.SetColorModulation(1, 1, 0, 0.486)
         end
         render.MaterialOverride(Material("warhammermaterials/holoprojection"))
@@ -498,7 +505,7 @@ function crossairscanner_move(newcrossairX, newcrossairY, ent)
         return crossair_x+(newcrossairX-crossair_x)*0.1, crossair_y + (newcrossairY-crossair_y) * 0.1
     end
     if math.abs(newcrossairX-crossair_x) < 15 and math.abs(newcrossairY-crossair_y) < 15 then
-        if not table.IsEmpty(scanenitys) and IsValid(ent) and ent:GetNW2Float("SPaceMarine_ScanP", 0 ) >= 1 then
+        if not table.IsEmpty(scanenitys) and IsValid(ent) and getenittyscanpersentage(ent) >= 1 then
         table.remove(scanenitys, 1)
         else
             --print(" DA lu la | " .. tostring(not table.IsEmpty(scanenitys)) .. " " .. tostring(IsValid(ent)) .. " " .. tostring((ent:GetNW2Float("SPaceMarine_ScanP", 0)) >= 1) .. tostring(ent:GetNW2Float("SPaceMarine_ScanP", 0)))
@@ -510,6 +517,17 @@ function crossairscanner_move(newcrossairX, newcrossairY, ent)
     return crossair_x+(newcrossairX-crossair_x)*0.075, crossair_y + (newcrossairY-crossair_y) * 0.075
 end
 
+function getenittyscanpersentage(ent) 
+    local per = enittyscanpersentage[ent]
+    if not per then
+        per = 0
+    end
+    print(per)
+    return per
+end
+function setenittyscanpersentage(ent, per) 
+    enittyscanpersentage[ent] = per
+end
 
 
 
@@ -738,13 +756,13 @@ local function OpenCustomEntityMenu(ent)
     local scananimation = vgui.Create("DNumSlider")
     scananimation:SetMin(0)
     scananimation:SetMax(1)
-    scananimation:SetValue(ent:GetNW2Float("SPaceMarine_ScanP", -1))
+    scananimation:SetValue(getenittyscanpersentage(ent))
     scananimation:SetDecimals(0)
     AddRowToCategory(listGeneral, "Scan Animation Timer", scananimation)
 
     
     local function scananimationApplyValue(value)
-        ent:SetNW2Float("SPaceMarine_ScanP", value)
+        setenittyscanpersentage(ent, value)
         --print("Debug 2" .. ent:GetNW2Float("SMS_disposition", -1).. "  " .. value)
     end
     scananimation.OnValueChanged = function(self, value)
