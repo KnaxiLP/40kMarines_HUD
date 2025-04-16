@@ -1,4 +1,5 @@
 
+if CLIENT then
 local hudoutline = Material("hud_outline.png")
 local scan_crossair = Material("g23.png")
 local scan_crossair_inner = Material("path4.png")
@@ -278,7 +279,7 @@ hook.Add("HUDPaint", "DrawEntitiesInArea", function()
             if getenittyscanpersentage(ent) < 1 then
                 haloColor = Color(255, 251, 0)
             else 
-                print(ent:GetNW2Bool("SMS_showinformation", false))
+                --print(ent:GetNW2Bool("SMS_showinformation", false))
                 if dist < 200 and ent:GetNW2Bool("SMS_showinformation", false) then
                     drawinformation(ent, pos, headscreenPos, LocalPlayer())
                 end
@@ -522,7 +523,7 @@ function getenittyscanpersentage(ent)
     if not per then
         per = 0
     end
-    print(per)
+    ---print(per)
     return per
 end
 function setenittyscanpersentage(ent, per) 
@@ -541,12 +542,12 @@ end
 
 -- Funktion, um Client-Ragdoll zu unterdrücken und stattdessen eine Server-Ragdoll zu spawnen
 hook.Add("OnNPCKilled", "ReplaceClientRagdollWithServerRagdoll", function(npc, attacker, inflictor)
-    print("Debug")
+    --print("Debug")
     if not IsValid(npc) then return end
-    print("Debug | " .. tostring(npc:GetRagdollOwner()))
+    --print("Debug | " .. tostring(npc:GetRagdollOwner()))
     -- Falls bereits ein Ragdoll existiert, lösche ihn sicherheitshalber
     if IsValid(npc:GetRagdollOwner()) then
-        print("Debug")
+        --print("Debug")
         npc:GetRagdollOwner():Remove()
     end
 
@@ -577,7 +578,7 @@ hook.Add("OnNPCKilled", "ReplaceClientRagdollWithServerRagdoll", function(npc, a
             end
         end
     end
-    print("---------------")
+    --print("---------------")
 end)
 
 hook.Add( "CreateClientsideRagdoll", "fade_out_corpses", function( entity, ragdoll )
@@ -792,3 +793,86 @@ properties.Add("custom_scanermenü", {
         -- Netzwerklogik falls du brauchst
     end
 })
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+hook.Add("HUDPaint", "DrawCompass", function()
+    local ply = LocalPlayer()
+    if not IsValid(ply) then return end
+
+    -- Kompass-Parameter
+    local screenW = ScrW()
+    local screenH = ScrH()
+    local compassWidth = 1000
+    local compassHeight = 30
+    local compassX = (screenW - compassWidth) / 2
+    local compassY = 50
+
+    local yaw = ply:EyeAngles().yaw
+    yaw = (yaw + 360) % 360 -- Normalisieren
+
+    -- Liste der Himmelsrichtungen
+    local directions = {
+        { name = "N", angle = 0 },
+        { name = "NW", angle = 45 },
+        { name = "w", angle = 90 },
+        { name = "SW", angle = 135 },
+        { name = "S", angle = 180 },
+        { name = "SO", angle = 225 },
+        { name = "O", angle = 270 },
+        { name = "NO", angle = 315 }
+
+    }
+
+    -- Kompass-Hintergrund
+    draw.RoundedBox(4, compassX, compassY, compassWidth, compassHeight, Color(0, 0, 0, 101))
+    
+
+    -- Jede Richtung zeichnen
+    for _, dir in ipairs(directions) do
+        local delta = math.AngleDifference(yaw, dir.angle)
+        local pos = (delta / 180) * (compassWidth / 0.5)
+        local x = compassX + (compassWidth / 0.5) + pos
+
+        if x > compassX and x < compassX + compassWidth then
+            draw.SimpleTextOutlined(
+            dir.name,                       -- Der Text (z. B. "N", "O", usw.)
+            "DermaDefaultBold",            -- Schriftart
+            x,                             -- X-Position
+            compassY + compassHeight / 2,  -- Y-Position
+            Color(255, 255, 255),          -- Textfarbe (weiß)
+            TEXT_ALIGN_CENTER, 
+            TEXT_ALIGN_CENTER,
+            1,                             -- Outline-Stärke (in Pixeln)
+            Color(96,193,0,191.25)          -- Outline-Farbe (grün)
+            )
+        end
+    end
+    for i = 0, 360, 5 do
+        local delta = math.AngleDifference(yaw, i)
+        local pos = (delta / 180) * (compassWidth / 0.5)
+        local x = compassX + (compassWidth / 0.5) + pos
+    
+        if x > compassX and x < compassX + compassWidth then
+            surface.SetDrawColor(255,0,0)
+    
+            local height = (i % 45 == 0) and 10 or 5 -- längerer Strich bei 0, 45, 90, etc.
+            surface.DrawLine(x, compassY + compassHeight - height, x, compassY + compassHeight)
+        end
+    end
+    -- Marker in der Mitte
+    surface.SetDrawColor(255, 0, 0, 255)
+    surface.DrawLine(screenW / 2, compassY, screenW / 2, compassY + compassHeight)
+end)

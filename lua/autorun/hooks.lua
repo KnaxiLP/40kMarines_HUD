@@ -17,7 +17,7 @@ local function ToggleMenu()
 
     -- Beispiel: Unsichtbarer Button
     for key, value in ipairs(config.funks) do
-        print(value)
+        --print(value)
     end
     local btn = vgui.Create("DButton", FunkMenu)
     btn:SetSize(210, 50)
