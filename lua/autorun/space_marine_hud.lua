@@ -22,7 +22,6 @@ hook.Add("HUDPaint", "SpaceMarinePaint", function()
         surface.SetDrawColor(255,255,255)
         surface.SetMaterial(hudoutline)
         surface.DrawTexturedRect(1920/2 - 1920/2,0,1920,1080)
-        surface.DrawRect(100,100,100,100)
         local hp = math.max(1, ply:Health()) -- Keine negativen HP-Werte
         local maxHp = ply:GetMaxHealth()
         local screeNW2, screenH = ScrW(), ScrH()
@@ -32,6 +31,7 @@ hook.Add("HUDPaint", "SpaceMarinePaint", function()
             surface.DrawOutlinedRect(ScrW()/2-100,100,200,40,3)
             surface.SetTextPos(ScrW()/2-50,110)
             surface.SetTextColor(255,6,0,alpha)
+            surface.SetFont("HudSelectionText")
             surface.DrawText("Low Vital Points")
             
         end
@@ -205,6 +205,7 @@ local function IsValidEntity(ent)
     if ent:GetClass() == "class C_BaseFlex" then return false end -- Hände ausblenden
     if ent:GetClass() == "class CLuaEffect" then return false end -- Hände ausblenden
     if ent:GetClass() == "env_sprite" then return false end -- Hände ausblenden
+    if ent:GetClass() == "viewmodel" then return false end -- Hände ausblenden
     return true
 end
 
@@ -875,4 +876,107 @@ hook.Add("HUDPaint", "DrawCompass", function()
     -- Marker in der Mitte
     surface.SetDrawColor(255, 0, 0, 255)
     surface.DrawLine(screenW / 2, compassY, screenW / 2, compassY + compassHeight)
+end)
+
+
+
+
+
+
+
+local icon1 = Material("icon3.png")
+local leader
+local color = Color(0,0,0)
+local members = {}
+hook.Add("HUDPaint", "Squadsystem" , function()
+    surface.SetDrawColor(0,0,0,99)
+    surface.DrawRect(100,60,250, 325) 
+    surface.SetDrawColor(0,0,0,99)
+    surface.DrawOutlinedRect(100,60,25*4+3*50,25*5+50*4,5)
+    surface.SetDrawColor(255,255,255)
+    local x = 100
+    local y = 60
+    local size = 50
+    local gap = 25
+    local items = {}
+    for i = 0, 3, 1 do 
+        y = y + gap
+        for k = 0, 2, 1 do 
+            x = x +gap
+            if not (i == 0 and (k == 0 or k == 2)) then
+                surface.DrawOutlinedRect(x,y ,size,size, 1)
+                table.insert(items, (i .. k) ,{ xc = x, yc = y})
+            end
+            x = x + size
+        end
+        y = y + size
+        x = x - 3*gap - 3* size
+    end
+    --for i = 0, #items, 1 do
+       -- if items[i]  then
+        --print( i )
+       -- end
+    --end
+    if IsValid(leader) then
+        print("Debugsss")
+        if items[1] then
+            local hp = math.max(1, leader:Health()) -- Keine negativen HP-Werte
+            local maxHp = leader:GetMaxHealth()
+            local matPath = leader:GetNW2String("SqSy_icon", "")
+            local iconMat = Material(matPath)
+            draw.SimpleText(leader:Nick(), "HudSelectionText", items[1].xc + 25, items[1].yc - 10, Color(255,255,255),TEXT_ALIGN_CENTER,TEXT_ALIGN_CENTER)
+            surface.SetDrawColor(color)
+            surface.DrawRect(items[1].xc, items[1].yc, 50, 50)
+            surface.SetDrawColor(255-(hp/maxHp)*255, 255*(hp/maxHp), 0)
+            surface.DrawRect(items[1].xc+3, items[1].yc+3, 44, 44)
+            if iconMat then
+                surface.SetDrawColor(255,255,255)
+                surface.SetMaterial(iconMat)
+                surface.DrawTexturedRect(items[1].xc + 5, items[1].yc + 5,40,40)
+            end
+        end
+    end
+    for x = 1, 9, 1 do
+        for i = 2, #items, 1 do
+            if items[i] then
+            
+                if members[x] then
+                    local aply = members[x]
+                    local hp = math.max(0, aply:Health()) -- Keine negativen HP-Werte
+                    local maxHp = aply:GetMaxHealth()
+                    local matPath = aply:GetNW2String("SqSy_icon", "")
+                    local iconMat = Material(matPath)
+                    draw.SimpleText(aply:Nick(), "HudSelectionText", items[i].xc + 25, items[i].yc - 10, Color(255,255,255),TEXT_ALIGN_CENTER,TEXT_ALIGN_CENTER)
+                    surface.SetDrawColor(color)
+                    surface.DrawRect(items[i].xc, items[i].yc, 50, 50)
+                    surface.SetDrawColor(255-(hp/maxHp)*255, 255*(hp/maxHp), 0)
+                    surface.DrawRect(items[i].xc+3, items[i].yc+3, 44, 44)
+                    if hp <= 0 then 
+                        iconMat = icon1
+                    end
+                    if iconMat then
+                        surface.SetDrawColor(255,255,255)
+                        surface.SetMaterial(iconMat)
+                        surface.DrawTexturedRect(items[i].xc + 5, items[i].yc + 5,40,40)
+                    end
+                    break 
+                end
+                
+                
+            end
+        end
+    end
+end)
+net.Receive("updateplayersquadhud", function()
+    local nleader = net.ReadPlayer()
+    local nmembers = net.ReadTable()
+    local ncolor = net.ReadColor()
+    local squad = net.ReadString()
+    print("LEADER::::::   " .. tostring(leader))
+    print(members)
+    print(ncolor)
+    leader = nleader
+    members = nmembers
+    color = ncolor
+
 end)
