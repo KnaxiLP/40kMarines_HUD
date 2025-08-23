@@ -7,9 +7,11 @@ spieler change color -> squad array -> alle squad spieler -> color change
 if SERVER then
 util.AddNetworkString("updateplayersquadhud")
 util.AddNetworkString("updateplayersquadmenu")
+util.AddNetworkString("joinsquad_player")
+util.AddNetworkString("leavesquad_player")
 end
 
-function updateplayersquadhud(ply, members, color, squadname, sendto)
+function updateplayersquadhud(company, ply, members, color, squadname, sendto)
     net.Start("updateplayersquadhud")
 
     if squads[squadname] and IsValid(squads[squadname].leader) then
@@ -38,17 +40,27 @@ function updateplayersquadhud(ply, members, color, squadname, sendto)
     net.WriteString(squadname or "Unknown")
     
     net.Send(sendto)
+    print("Debug .. " .. company)
+    -- Hilfe hier hier wierd irgendwie die folgenden prints net ausgelöst
+    for k, v in pairs(squads) do
+        companycc = company .. "_cc"
+        print(companycc ..   k)
+        if k == companycc then
+            
+        end
+    end
 end
 
-function joinsquad(ply, cmd, args)
-    local squadname = args[1]
-    local ncolor = args[2]
+function joinsquad(ply, nsquadname, nnncompany)
+    local squadname = nsquadname
+    local ncompany = nnncompany
 
     if not squads[squadname] then
         squads[squadname] = {
+            company = ncompany,
             leader = nil,
             members = {ply},
-            color = Color(247, 247, 247)
+            color = Color(255, 255, 255)
         }
     else
         local alreadyMember = false
@@ -65,6 +77,27 @@ function joinsquad(ply, cmd, args)
 
     for _, member in ipairs(squads[squadname].members) do 
         updateplayersquadhud(
+            squads[squadname].company,
+            squads[squadname].leader,
+            squads[squadname].members,
+            squads[squadname].color,
+            squadname,
+            member
+        )
+    end
+end
+
+local function leavesquad(ply,  nsquadname, nnncompany )
+    for i, member in ipairs(squads[nsquadname].members) do
+        if member == ply then
+            PrintTable(squads[nsquadname].members)
+            print(i)
+            table.remove(squads[nsquadname].members, i)
+        end 
+    end
+    for _, member in ipairs(squads[squadname].members) do 
+        updateplayersquadhud(
+            squads[squadname].company,
             squads[squadname].leader,
             squads[squadname].members,
             squads[squadname].color,
@@ -75,6 +108,17 @@ function joinsquad(ply, cmd, args)
 end
 
 if SERVER then
+    net.Receive("leavesquad_player", function(len, ply)
+        local squadname = net.ReadString()
+        local company = net.ReadString()
+        leavesquad(ply, squadname, company)
+    end)
+    net.Receive("joinsquad_player", function(len, ply)
+        local squadname = net.ReadString()
+        local company = net.ReadString()
+        joinsquad(ply, squadname, company)
+    end)
+
     net.Receive("updateleader", function()
         local bool = net.ReadBool()
         local ply = net.ReadPlayer()
@@ -94,6 +138,7 @@ if SERVER then
             table.insert(squads[squadname].members, ply)
         end
         updateplayersquadhud(
+            squads[squadname].company,
             squads[squadname].leader,
             squads[squadname].members,
             squads[squadname].color,
@@ -102,6 +147,7 @@ if SERVER then
         )
         for _, member in ipairs(squads[squadname].members) do
             updateplayersquadhud(
+                squads[squadname].company,
                 squads[squadname].leader,
                 squads[squadname].members,
                 squads[squadname].color,

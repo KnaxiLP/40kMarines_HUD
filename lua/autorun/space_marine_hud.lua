@@ -1,15 +1,24 @@
 
+hook.Add("HUDShouldDraw", "HideDefaultWeaponMenu", function(name)
+    if name=="CHudHealth" then
+        return false
+    end
+end)
 if CLIENT then
 local hudoutline = Material("hud_outline.png")
 local scan_crossair = Material("g23.png")
 local scan_crossair_inner = Material("path4.png")
 local dangersignal = Material("damgersing.png")
-
-
+local back = Material("Subtract.png")
 hook.Add("HUDPaint", "SpaceMarinePaint", function()
     local ply = LocalPlayer()
     --if ply:GetNW2Bool("SpaceMarineHUD", false) then
-       
+        
+    
+
+        //surface.DrawTexturedRect(1250,800,500,200)
+
+
         local maxarmor = ply:GetMaxArmor()
         local armor =  ply:Armor()
 
@@ -17,11 +26,11 @@ hook.Add("HUDPaint", "SpaceMarinePaint", function()
         local startarmorx = 948-274*armorbardings
         --surface.SetDrawColor(96,193,0,191.25)
         --surface.DrawRect(47,startarmorx,70,274*armorbardings)
-        --urface.SetDrawColor(34,145,0,191.25)
+        --surface.SetDrawColor(34,145,0,191.25)
         --surface.DrawOutlinedRect(47,674,70,274,5)
         surface.SetDrawColor(255,255,255)
         surface.SetMaterial(hudoutline)
-        surface.DrawTexturedRect(1920/2 - 1920/2,0,1920,1080)
+        surface.DrawTexturedRect(0,0,ScrW(),ScrH    ())
         local hp = math.max(1, ply:Health()) -- Keine negativen HP-Werte
         local maxHp = ply:GetMaxHealth()
         local screeNW2, screenH = ScrW(), ScrH()
@@ -95,7 +104,7 @@ end)
 
 --          ---------------------------------------------------------------------------------------------------------
 --          [                                           Rüstungs Anzeige                                            ]
---          ---------------------------------------------------------------------------------------------------------
+--[[]          ---------------------------------------------------------------------------------------------------------
 local playerEntity, silhouetteEntity
 
 local playerEntity = nil
@@ -136,36 +145,65 @@ hook.Add("HUDPaint", "DrawHealthAndShieldBasedColoredPlayerModelOnHUD", function
     end
 
     if not IsValid(playerEntity) or not IsValid(playerEntity2) then return end  
+     
+    
 
-    cam.Start3D(Vector(100, 30, 50), Angle(0, 180, 0), 70, x, y, width, height)
-    render.SuppressEngineLighting(true)
 
-    playerEntity:SetPos(Vector(0, 0, 0))
-    playerEntity:SetAngles(Angle(0, RealTime() * 30 % 360, 0))
-    playerEntity2:SetPos(Vector(0, 0, 0))
-    playerEntity2:SetAngles(Angle(0, RealTime() * 30 % 360, 0))
+    local w, h = ScrW(), ScrH()
+    local baseScale = 0.015  -- Fester Wert, empirisch getestet
+    playerEntity:SetModelScale(baseScale, 0)
+    playerEntity2:SetModelScale(baseScale, 0)
+    local camAng = Angle(0, 180, 0)
+    -- Kamera-Konstanten
+    local viewDistance = 1000  -- wie weit entfernt die Kamera steht
+    local modelCenter = Vector(0, 0, 0)  -- Mittelpunkt des Modells
+    
+        local w, h = ScrW(), ScrH()
 
-    local clipHeight = Lerp(visibilityPercent, 0, -72)
-    local clipNormal = Vector(0, 0, -1)
+    -- Screen-Koordinaten → Normalisierte Koordinaten (zwischen -1 und 1)
+    local nx = (1 / w) * 2
+    local ny = (2 / h) * 2
 
-    render.EnableClipping(true)
-    render.PushCustomClipPlane(clipNormal, clipHeight)
+    -- Berechne Basis-Vektoren (nach rechts / oben aus Sicht der Kamera)
+    local forward = camAng:Forward()
+    local right = camAng:Right()
+    local up = camAng:Up()
 
-    render.SetBlend(1)
-    render.SetColorModulation(0.4, 0.8, 0)  
-    render.MaterialOverride(Material("warhammermaterials/holoprojection"))
-    playerEntity:DrawModel()
-    render.PopCustomClipPlane()
-    render.EnableClipping(false)
+    -- Bei sehr kleinem FOV kannst du annehmen: Kamera-Pixel verschiebt "platt"
+    local dings =  (right * nx * viewDistance) - (up * ny * viewDistance)
 
-    render.SetBlend(0.2)
-    render.SetColorModulation(0, 0, 0)
-    render.MaterialOverride(Material("models/debug/debugwhite"))
-    playerEntity2:DrawModel()
+    local camPos = modelCenter + Vector(viewDistance, 0, 0) + dings
+    
 
-    render.MaterialOverride(nil)
-    render.SetColorModulation(1, 1, 1)
-    render.SetBlend(1)
+    cam.Start3D(camPos, camAng, 1, 0, 0, w, h)
+        render.SuppressEngineLighting(true)
+
+        playerEntity:SetPos(Vector(0, 0, 0))
+        playerEntity:SetAngles(Angle(0, 360, 0))
+        playerEntity2:SetPos(Vector(0, 0, 0))
+        playerEntity2:SetAngles(Angle(0,  360, 0))
+
+        local clipHeight = Lerp(visibilityPercent, 0, -72)
+        local clipNormal = Vector(0, 0, -1)
+
+        render.EnableClipping(true)
+        render.PushCustomClipPlane(clipNormal, clipHeight)
+
+        render.SetBlend(1)
+        render.SetColorModulation(0.4, 0.8, 0)  
+        render.MaterialOverride(Material("warhammermaterials/holoprojection"))
+        playerEntity:DrawModel()
+        render.PopCustomClipPlane()
+        render.EnableClipping(false)
+
+        render.SetBlend(0.2)
+        render.SetColorModulation(0, 0, 0)
+        render.MaterialOverride(Material("models/debug/debugwhite"))
+        playerEntity2:DrawModel()
+
+        render.MaterialOverride(nil)
+        render.SetColorModulation(1, 1, 1)
+        render.SetBlend(1)
 
     cam.End3D()
 
@@ -191,7 +229,7 @@ end)
 
 
 
---          ---------------------------------------------------------------------------------------------------------
+]]--          ---------------------------------------------------------------------------------------------------------
 --          [                                           Scan Anzeige                                                ]
 --          ---------------------------------------------------------------------------------------------------------
 
@@ -243,6 +281,8 @@ local entitiesoutlinetabel = {}
 local scanenitys = {}
 local scanenitysseen = {}
 hook.Add("HUDPaint", "DrawEntitiesInArea", function()
+    local ply = LocalPlayer()
+    --if ply:GetNW2Bool("SpaceMarineHUD", false) then
     entitiesoutlinetabel = {}
     local x = 0
     local crossairX, crossairY = 0,0
@@ -352,7 +392,7 @@ hook.Add("HUDPaint", "DrawEntitiesInArea", function()
     end
     ent = nil
     
-    
+--end
 end)
 
 hook.Add("PreDrawHalos", "DrawEntityOutlinesOnce", function()
@@ -805,7 +845,25 @@ end
 
 
 
+    if not AnimatedMaskLinesfc then
+        AnimatedMaskLinesfc = {}
 
+        local x, y = (ScrW() - 500) / 2, 50
+        local width, height = 500, 30
+
+        for i = 1, 11 do
+            local lx = x
+            local ly = y + height + i*3
+
+            table.insert(AnimatedMaskLinesfc, {
+                x = lx,
+                y = ly,
+                w = width,
+                h = 1,
+                speed = 10 -- korrigiert zu sichtbarer Bewegung (Pixel/Sekunde)
+            })
+        end
+    end
 
 
 
@@ -816,7 +874,7 @@ hook.Add("HUDPaint", "DrawCompass", function()
     -- Kompass-Parameter
     local screenW = ScrW()
     local screenH = ScrH()
-    local compassWidth = 1000
+    local compassWidth = 500
     local compassHeight = 30
     local compassX = (screenW - compassWidth) / 2
     local compassY = 50
@@ -836,6 +894,43 @@ hook.Add("HUDPaint", "DrawCompass", function()
         { name = "NO", angle = 315 }
 
     }
+    local x, y = (ScrW() - 500) / 2, 50
+        local width, height = 500, 30
+        local frameTime = FrameTime()
+
+        -- Stencil aktivieren
+        render.SetStencilEnable(true)
+        render.ClearStencil()
+        render.SetStencilTestMask(255)
+        render.SetStencilWriteMask(255)
+        render.SetStencilPassOperation(STENCILOPERATION_KEEP)
+        render.SetStencilZFailOperation(STENCILOPERATION_KEEP)
+
+        -- Maske vorbereiten (zeichne Linien in Stencil-Buffer)
+        render.SetStencilCompareFunction(STENCILCOMPARISONFUNCTION_NEVER)
+        render.SetStencilReferenceValue(1)
+        render.SetStencilFailOperation(STENCILOPERATION_REPLACE)
+
+        
+            surface.SetDrawColor(255, 255, 255, 255)
+
+            -- Linien bewegen & zeichnen (nur in Stencil)
+            for _, line in ipairs(AnimatedMaskLinesfc) do
+                line.y = line.y - line.speed * frameTime * 1 -- Bewegung pro Sekunde
+                if line.y + line.h < y then
+                    line.y = y + height -- von unten wieder rein
+                end
+                surface.SetDrawColor(255, 255, 255, math.random(200,255))
+                surface.DrawRect(line.x, line.y, line.w, line.h)
+            end
+        
+
+        -- Jetzt Inhalt zeichnen, aber nur wo Stencil == 1
+        render.SetStencilFailOperation(STENCILOPERATION_KEEP)
+        render.SetStencilCompareFunction(STENCILCOMPARISONFUNCTION_EQUAL)
+        render.SetStencilReferenceValue(1)
+
+        
 
     -- Kompass-Hintergrund
     draw.RoundedBox(4, compassX, compassY, compassWidth, compassHeight, Color(0, 0, 0, 101))
@@ -874,7 +969,47 @@ hook.Add("HUDPaint", "DrawCompass", function()
         end
     end
     -- Marker in der Mitte
-    surface.SetDrawColor(255, 0, 0, 255)
+    surface.SetDrawColor(34, 145, 0, 255)
+    surface.DrawLine(screenW / 2, compassY, screenW / 2, compassY + compassHeight)
+    render.SetStencilEnable(false)
+        -- Kompass-Hintergrund
+    draw.RoundedBox(4, compassX, compassY, compassWidth, compassHeight, Color(  34, 145, 0, 173))
+    
+
+    -- Jede Richtung zeichnen
+    for _, dir in ipairs(directions) do
+        local delta = math.AngleDifference(yaw, dir.angle)
+        local pos = (delta / 180) * (compassWidth / 0.5)
+        local x = compassX + (compassWidth / 0.5) + pos
+
+        if x > compassX and x < compassX + compassWidth then
+            draw.SimpleTextOutlined(
+            dir.name,                       -- Der Text (z. B. "N", "O", usw.)
+            "DermaDefaultBold",            -- Schriftart
+            x,                             -- X-Position
+            compassY + compassHeight / 2,  -- Y-Position
+            Color(255, 255, 255),          -- Textfarbe (weiß)
+            TEXT_ALIGN_CENTER, 
+            TEXT_ALIGN_CENTER,
+            1,                             -- Outline-Stärke (in Pixeln)
+            Color(78,78,78,191)          -- Outline-Farbe (grün)
+            )
+        end
+    end
+    for i = 0, 360, 5 do
+        local delta = math.AngleDifference(yaw, i)
+        local pos = (delta / 180) * (compassWidth / 0.5)
+        local x = compassX + (compassWidth / 0.5) + pos
+    
+        if x > compassX and x < compassX + compassWidth then
+            surface.SetDrawColor(0, 0, 0)
+    
+            local height = (i % 45 == 0) and 10 or 5 -- längerer Strich bei 0, 45, 90, etc.
+            surface.DrawLine(x, compassY + compassHeight - height, x, compassY + compassHeight)
+        end
+    end
+    -- Marker in der Mitte
+    surface.SetDrawColor(255, 255, 255)
     surface.DrawLine(screenW / 2, compassY, screenW / 2, compassY + compassHeight)
 end)
 
@@ -882,13 +1017,76 @@ end)
 
 
 
-
+function extendedviewdraw()
+    surface.SetDrawColor(0,0,0,99)
+    surface.DrawRect(100,60,250, 325) 
+    surface.SetDrawColor(0,0,0,99)
+    surface.DrawOutlinedRect(100,60,25*4+3*50,25*5+50*4,5)
+    surface.SetDrawColor(255,255,255)
+    local x = 100+10
+    local y = 200
+    local size = 25
+    local gap = 10
+    local g = 1
+    local items = {}
+    for i = 0, 3, 1 do -- 4
+        y = y + gap
+        for k = 0, 2, 1 do -- 3 
+            x = x +gap
+            if not (i == 0 and (k == 0 or k == 2)) then
+                surface.DrawOutlinedRect(x,y ,size,size, 1)
+                table.insert(items, (g .. i .. k) ,{ xc = x, yc = y})
+            end
+            x = x + size
+        end
+        y = y + size
+        x = x - 3*gap - 3* size
+    end
+    local x = 100+250/2+10
+    local y = 200
+    g = 2
+    for i = 0, 3, 1 do 
+        y = y + gap
+        for k = 0, 2, 1 do 
+            x = x +gap
+            if not (i == 0 and (k == 0 or k == 2)) then
+                surface.DrawOutlinedRect(x,y ,size,size, 1)
+                table.insert(items, (g .. i .. k) ,{ xc = x, yc = y})
+            end
+            x = x + size
+        end
+        y = y + size
+        x = x - 3*gap - 3* size
+    end
+    local x = 100+250/2-(3*25+30)/2
+    local y = 100
+    g = 0
+    for i = 0, 1, 1 do --2 
+        y = y + gap
+        for k = 0, 2, 1 do -- 3
+            x = x +gap
+            if not (i == 1 and k == 2) then
+                surface.DrawOutlinedRect(x,y ,size,size, 1)
+                table.insert(items, (g .. i .. k) ,{ xc = x, yc = y})
+            end
+            x = x + size
+        end
+        y = y + size
+        x = x - 3*gap - 3* size
+    end
+    for key, value in pairs(items) do
+        --print(key)
+        draw.SimpleText(key, "HudSelectionText", value.xc + 25, value.yc - 10, Color(255,255,255),TEXT_ALIGN_CENTER,TEXT_ALIGN_CENTER)
+    end
+end
 
 local icon1 = Material("icon3.png")
 local leader
 local color = Color(0,0,0)
 local members = {}
+local extendedview = false  
 hook.Add("HUDPaint", "Squadsystem" , function()
+    if extendedview then extendedviewdraw() return end
     surface.SetDrawColor(0,0,0,99)
     surface.DrawRect(100,60,250, 325) 
     surface.SetDrawColor(0,0,0,99)
@@ -980,3 +1178,153 @@ net.Receive("updateplayersquadhud", function()
     color = ncolor
 
 end)
+
+
+
+local Funk1Color = Color(255,255,255)
+local Funk2Color = Color(255,255,255)
+local Funk3Color = Color(255,255,255)
+local FunkConfig = include("config/config.lua")  
+net.Receive("updateaktivfunkBC", function()
+    local funk = net.ReadInt(4)
+    local color = net.ReadColor()
+
+    if funk == 1 then
+        Funk1Color = color
+    elseif funk == 2 then
+        Funk2Color = color
+    elseif funk == 3 then
+        Funk3Color = color
+    end
+
+end)
+hook.Add("HUDPaint", "Funksystem", function()
+    local ply = LocalPlayer()
+    local FunkNames = {"N/A", "N/A", "N/A"}
+
+    if not ply.aktivefunkkanale then
+        ply.aktivefunkkanale = {}
+    end
+    local length = #ply.aktivefunkkanale-1
+    --print(length)
+    --PrintTable(ply.aktivefunkkanaele)
+    --print(#ply.aktivefunkkanale)
+    for i = 1, 3 do
+        if not ply.aktivefunkkanaele then break end
+        if ply.aktivefunkkanaele[i] ~= nil then
+            --print(ply.aktivefunkkanaele[i])
+            if ply.aktivefunkkanaele[i] ~= "N/A" then
+                FunkNames[i] = FunkConfig.Kanaele[ply.aktivefunkkanaele[i]].Kuerzel
+            else
+                FunkNames[i] = "N/A"
+            end
+        end
+    end
+--    if ply.aktivefunkkanaele then
+--        --PrintTable(FunkConfig.Kanaele)
+--        print(IsValid(ply.aktivefunkkanaele[1]) .. ply.aktivefunkkanaele[1])
+--        if IsValid(ply.aktivefunkkanaele[1]) then
+--            Funk1Name = FunkConfig.Kanaele[ply.aktivefunkkanaele[1]].Kuerzel
+--        end
+--        
+--        if IsValid(ply.aktivefunkkanaele[2]) then
+--            Funk2Name = FunkConfig.Kanaele[ply.aktivefunkkanaele[2]].Kuerzel
+--        end
+--        if IsValid(ply.aktivefunkkanaele[3]) then
+--            Funk3Name = FunkConfig.Kanaele[ply.aktivefunkkanaele[3]].Kuerzel
+--        end
+--    end
+    
+    surface.SetDrawColor(0,0,0,99)
+    surface.DrawRect(ScrW()-400,90,250,40)
+    surface.SetDrawColor(20,172,0)
+    surface.DrawOutlinedRect(ScrW()-400,90,250,40,3)
+    surface.DrawRect(ScrW()-400+250/3-1.5,90,3,40)
+    surface.DrawRect(ScrW()-400+250/3*2-1.5,90,3,40)
+
+    
+
+    draw.DrawText(FunkNames[1],"HudSelectionText",ScrW()-400+(250/3)/2, 102, Funk1Color,TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    draw.DrawText(FunkNames[2],"HudSelectionText",ScrW()-400+(250/2), 102, Funk2Color,TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    draw.DrawText(FunkNames[3],"HudSelectionText",ScrW()-400+(250/3)*2.5, 102, Funk3Color,TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    
+end)
+
+
+if CLIENT then
+    local imageMat = Material("Subtract.png", "smooth")
+    local maskMat = Material("Rectangle 2.png", "smooth")
+
+    -- Einmal initialisieren
+    if not AnimatedMaskLines then
+        AnimatedMaskLines = {}
+
+        local x, y = 1250, 800
+        local width, height = ScrW()*0.1, ScrH()*0.2
+
+        for i = 1, ScrH()*0.2/2 do
+            local lx = x
+            local ly = y + height + i*3
+
+            table.insert(AnimatedMaskLines, {
+                x = lx,
+                y = ly,
+                w = width,
+                h = 1,
+                speed = 45 -- korrigiert zu sichtbarer Bewegung (Pixel/Sekunde)
+            })
+        end
+    end
+
+    -- In HUDPaint oder dein Render-Hook:
+    hook.Add("HUDPaint", "DrawStencilMovingLines", function()
+        local x, y = ScrW()*0.1, ScrH()-ScrH()*0.138
+        local width, height = ScrW()*0.1, ScrH()*0.1
+        local frameTime = FrameTime()
+
+        -- Stencil aktivieren
+        render.SetStencilEnable(true)
+        render.ClearStencil()
+        render.SetStencilTestMask(255)
+        render.SetStencilWriteMask(255)
+        render.SetStencilPassOperation(STENCILOPERATION_KEEP)
+        render.SetStencilZFailOperation(STENCILOPERATION_KEEP)
+
+        -- Maske vorbereiten (zeichne Linien in Stencil-Buffer)
+        render.SetStencilCompareFunction(STENCILCOMPARISONFUNCTION_NEVER)
+        render.SetStencilReferenceValue(1)
+        render.SetStencilFailOperation(STENCILOPERATION_REPLACE)
+
+        
+            surface.SetDrawColor(255, 255, 255, 255)
+
+            -- Linien bewegen & zeichnen (nur in Stencil)
+            for _, line in ipairs(AnimatedMaskLines) do
+                line.y = line.y - line.speed * frameTime * 1 -- Bewegung pro Sekunde
+                if line.y + line.h < y then
+                    line.y = y + height -- von unten wieder rein
+                end
+                surface.SetDrawColor(255, 255, 255, math.random(200,255))
+                surface.DrawRect(line.x, line.y, line.w, line.h)
+            end
+        
+
+        -- Jetzt Inhalt zeichnen, aber nur wo Stencil == 1
+        render.SetStencilFailOperation(STENCILOPERATION_KEEP)
+        render.SetStencilCompareFunction(STENCILCOMPARISONFUNCTION_EQUAL)
+        render.SetStencilReferenceValue(1)
+
+        
+        surface.SetDrawColor(255, 255, 255, 255)
+        surface.SetMaterial(imageMat)
+        surface.DrawTexturedRect(x, y, width, height)
+        
+
+        render.SetStencilEnable(false)
+
+        
+        surface.SetDrawColor(255, 255, 255, 133)
+        surface.SetMaterial(imageMat)
+        surface.DrawTexturedRect(x, y, width, height)
+    end)
+end

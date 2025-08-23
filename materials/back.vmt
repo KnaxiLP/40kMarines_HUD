@@ -1,0 +1,27 @@
+"UnlitGeneric"
+{
+    "$baseTexture" "back"
+    "$translucent" 1
+    "$vertexalpha" 1
+    "$vertexcolor" 1
+
+    "$detail" "lines"
+    "$detailblendmode" 6              // blendet Linien nur auf nicht-transparenten Stellen
+    "$detailscale" 1
+    "$detailframe" 0
+    "$detailtransform" "center .5 .5 scale 1 1 rotate 0 translate 0 0"
+
+    "$ignorez" 1
+    "$nofog" 1
+    "$nomip" 1
+
+    "Proxies"
+    {
+        "TextureScroll"
+        {
+            "texturescrollvar" "$detailtransform"
+            "texturescrollrate" "0.2"
+            "texturescrollangle" "270"
+        }
+    }
+}

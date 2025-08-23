@@ -1,0 +1,21 @@
+<svg width="520" height="220" viewBox="0 0 520 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+<foreignObject x="-10" y="-14" width="540" height="240"><div xmlns="http://www.w3.org/1999/xhtml" style="backdrop-filter:blur(10px);clip-path:url(#bgblur_0_19_84_clip_path);height:100%;width:100%"></div></foreignObject><g filter="url(#filter0_d_19_84)" data-figma-bg-blur-radius="20">
+<mask id="path-1-inside-1_19_84" fill="white">
+<path d="M485 6C485 19.8071 496.193 31 510 31V181C496.193 181 485 192.193 485 206H35C35 192.193 23.8071 181 10 181V31C23.8071 31 35 19.8071 35 6H485Z"/>
+</mask>
+<path d="M485 6H490V1H485V6ZM510 31H515V26H510V31ZM510 181V186H515V181H510ZM485 206V211H490V206H485ZM35 206H30V211H35V206ZM10 181H5V186H10V181ZM10 31V26H5V31H10ZM35 6V1H30V6H35ZM485 6H480C480 22.5685 493.431 36 510 36V31V26C498.954 26 490 17.0457 490 6H485ZM510 31H505V181H510H515V31H510ZM510 181V176C493.431 176 480 189.431 480 206H485H490C490 194.954 498.954 186 510 186V181ZM485 206V201H35V206V211H485V206ZM35 206H40C40 189.431 26.5685 176 10 176V181V186C21.0457 186 30 194.954 30 206H35ZM10 181H15V31H10H5V181H10ZM10 31V36C26.5685 36 40 22.5685 40 6H35H30C30 17.0457 21.0457 26 10 26V31ZM35 6V11H485V6V1H35V6Z" fill="#229100" fill-opacity="0.6" mask="url(#path-1-inside-1_19_84)"/>
+</g>
+<defs>
+<filter id="filter0_d_19_84" x="-10" y="-14" width="540" height="240" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dy="4"/>
+<feGaussianBlur stdDeviation="5"/>
+<feComposite in2="hardAlpha" operator="out"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0.133333 0 0 0 0 0.568627 0 0 0 0 0 0 0 0 0.6 0"/>
+<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_19_84"/>
+<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_19_84" result="shape"/>
+</filter>
+<clipPath id="bgblur_0_19_84_clip_path" transform="translate(10 14)"><path d="M485 6C485 19.8071 496.193 31 510 31V181C496.193 181 485 192.193 485 206H35C35 192.193 23.8071 181 10 181V31C23.8071 31 35 19.8071 35 6H485Z"/>
+</clipPath></defs>
+</svg>
