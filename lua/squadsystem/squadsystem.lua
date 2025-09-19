@@ -41,12 +41,14 @@ function updateplayersquadhud(company, ply, members, color, squadname, sendto)
     
     net.Send(sendto)
     print("Debug .. " .. company)
+    if IsValid(company) or company == nil then
     -- Hilfe hier hier wierd irgendwie die folgenden prints net ausgelöst
-    for k, v in pairs(squads) do
-        companycc = company .. "_cc"
-        print(companycc ..   k)
-        if k == companycc then
-            
+        for k, v in pairs(squads) do
+            companycc = company .. "_cc"
+            print(companycc ..   k)
+            if k == companycc then
+                
+            end
         end
     end
 end
@@ -93,15 +95,23 @@ local function leavesquad(ply,  nsquadname, nnncompany )
             PrintTable(squads[nsquadname].members)
             print(i)
             table.remove(squads[nsquadname].members, i)
+            updateplayersquadhud(
+                nil,
+                nil,
+                {},
+                nil,
+                nil,
+                ply
+            )
         end 
     end
-    for _, member in ipairs(squads[squadname].members) do 
+    for _, member in ipairs(squads[nsquadname].members) do 
         updateplayersquadhud(
-            squads[squadname].company,
-            squads[squadname].leader,
-            squads[squadname].members,
-            squads[squadname].color,
-            squadname,
+            squads[nsquadname].company,
+            squads[nsquadname].leader,
+            squads[nsquadname].members,
+            squads[nsquadname].color,
+            nsquadname,
             member
         )
     end

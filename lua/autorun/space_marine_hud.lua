@@ -10,24 +10,64 @@ local scan_crossair = Material("g23.png")
 local scan_crossair_inner = Material("path4.png")
 local dangersignal = Material("damgersing.png")
 local back = Material("Subtract.png")
+local gradient_up = Material("gui/gradient_up") 
+local gradient_down = Material("gui/gradient_down") 
+local gradient_center = Material("gui/gradient")   
+
+
 hook.Add("HUDPaint", "SpaceMarinePaint", function()
     local ply = LocalPlayer()
-    --if ply:GetNW2Bool("SpaceMarineHUD", false) then
+    if not ply:GetNW2Bool("SpaceMarineHUD", false) then return end
         
-    
-
+        surface.SetDrawColor(23,197,0,0)
+        surface.SetMaterial(gradient_up)
+        surface.DrawTexturedRect(0,ScrH()-100,ScrW(),100)
+        surface.SetMaterial(gradient_down)
+        surface.DrawTexturedRect(0,0,ScrW(),100)
+        surface.SetMaterial(gradient_center)
+        surface.DrawTexturedRectUV(ScrW()-100, 0, 100, ScrH(), 1, 0, 0, 1)
+        surface.DrawTexturedRectUV(0, 0, 100, ScrH(), 0, 1, 1, 0)
+        surface.SetDrawColor(0,0,0,87)
+        surface.SetMaterial(gradient_up)
+        surface.DrawTexturedRect(0,ScrH()-100,ScrW(),100)
+        surface.SetMaterial(gradient_down)
+        surface.DrawTexturedRect(0,0,ScrW(),100)
+        surface.SetMaterial(gradient_center)
+        surface.DrawTexturedRectUV(ScrW()-100, 0, 100, ScrH(), 1, 0, 0, 1)
+        surface.DrawTexturedRectUV(0, 0, 100, ScrH(), 0, 1, 1, 0)
         //surface.DrawTexturedRect(1250,800,500,200)
 
-
+         
         local maxarmor = ply:GetMaxArmor()
         local armor =  ply:Armor()
 
         local armorbardings = armor/maxarmor
-        local startarmorx = 948-274*armorbardings
+        print(armorbardings)
         --surface.SetDrawColor(96,193,0,191.25)
         --surface.DrawRect(47,startarmorx,70,274*armorbardings)
         --surface.SetDrawColor(34,145,0,191.25)
         --surface.DrawOutlinedRect(47,674,70,274,5)
+
+        surface.SetDrawColor(0,0,0,99+99)
+        local dadx, dady = 200, 1050
+        local hp = math.max(1, ply:Health()) -- Keine negativen HP-Werte
+        local maxHp = ply:GetMaxHealth()
+        local healthpersatige = hp/maxHp
+        local quad = {{x = dadx,y = dady-30},{x = dadx+20*20,y = dady-2*20-30},{x = dadx+20*20,y = dady-2*20},{x = dadx,y = dady}}
+        surface.DrawPoly(quad)
+        surface.SetDrawColor(0,187,31)
+        local quad = {{x = dadx+5,y = dady-30+5},{x = dadx+20*20*healthpersatige-5,y = dady-2*20*healthpersatige-30+5},{x = dadx+20*20*healthpersatige-5,y = dady-2*20*healthpersatige-5},{x = dadx+5,y = dady-5}}
+        surface.DrawPoly(quad)
+
+        surface.SetDrawColor(0,0,0,99+99)
+        local dadx, dady = 200, 1020
+
+        local quad = {{x = dadx,y = dady-30},{x = dadx+20*20,y = dady-2*20-30},{x = dadx+20*20,y = dady-2*20},{x = dadx,y = dady}}
+        surface.DrawPoly(quad)
+        surface.SetDrawColor(0,148,247)
+        local quad = {{x = dadx+5,y = dady-30+5},{x = dadx+20*20*armorbardings-5,y = dady-2*20*armorbardings-30+5},{x = dadx+20*20*armorbardings-5,y = dady-2*20*armorbardings-5},{x = dadx+5,y = dady-5}}
+        surface.DrawPoly(quad)
+
         surface.SetDrawColor(255,255,255)
         surface.SetMaterial(hudoutline)
         surface.DrawTexturedRect(0,0,ScrW(),ScrH    ())
@@ -75,15 +115,12 @@ hook.Add("HUDPaint", "SpaceMarinePaint", function()
             
             local newX, newY = startX + i, startY - height
             
-            surface.SetDrawColor(255-(hp/maxHp)*255, 255*(hp/maxHp), 0)
+            --surface.SetDrawColor(255-(hp/maxHp)*255, 255*(hp/maxHp), 0)
             
             
-            surface.DrawLine(lastX, lastY, newX, newY)
+            --surface.DrawLine(lastX, lastY, newX, newY)
             lastX, lastY = newX, newY
         end
-       
-        
-    --end
 end)
 
 
@@ -280,9 +317,10 @@ end
 local entitiesoutlinetabel = {}
 local scanenitys = {}
 local scanenitysseen = {}
+local alpha = 0
 hook.Add("HUDPaint", "DrawEntitiesInArea", function()
     local ply = LocalPlayer()
-    --if ply:GetNW2Bool("SpaceMarineHUD", false) then
+    if not ply:GetNW2Bool("SpaceMarineHUD", false) then return end
     entitiesoutlinetabel = {}
     local x = 0
     local crossairX, crossairY = 0,0
@@ -386,7 +424,7 @@ hook.Add("HUDPaint", "DrawEntitiesInArea", function()
         crossairY = pos.y
     end
     if table.IsEmpty(scanenitys) or IsValid(scanenitys[1].ent) then
-    crossairscanner(crossairX, crossairY, ent)
+        crossairscanner(crossairX, crossairY, ent)
     else
         scanenitys = {}
     end
@@ -427,7 +465,7 @@ function DrawFill(ent)
     local maxHealth = ent.GetMaxHealth and ent:GetMaxHealth() or 100
     if getenittyscanpersentage(ent) < 1 then
         visibilityPercent = getenittyscanpersentage(ent)
-        setenittyscanpersentage(ent, getenittyscanpersentage(ent)+0.05)
+        setenittyscanpersentage(ent, getenittyscanpersentage(ent)+0.01)
     else
         local visibilityPercent = getenittyscanpersentage(ent)
         return
@@ -529,9 +567,10 @@ function crossairscanner(crossairX, crossairY, ent)
     if crossairX == nil then
         scanenitys = {}
     end
+    
     crossairX, crossairY = crossairscanner_move(crossairX,crossairY, ent)
     crossair_x, crossair_y = crossairX, crossairY
-    surface.SetDrawColor(255,255,255)
+    surface.SetDrawColor(255,255,255, alpha)
     surface.SetMaterial(scan_crossair)
     surface.DrawTexturedRectRotated(crossairX, crossairY,170,170,0)--0+360*RealTime()*0.1
     surface.SetMaterial(scan_crossair_inner)
@@ -541,10 +580,16 @@ end
 
 function crossairscanner_move(newcrossairX, newcrossairY, ent)
     if newcrossairX == 0 or newcrossairY == 0 then
-        
-        newcrossairX = 200
-        newcrossairY = 500
+        newcrossairX = ScrW()/2
+        newcrossairY = ScrH()/2
+        if math.Round(crossair_x) == newcrossairX and math.Round(crossair_y) == newcrossairY then
+            alpha = math.Clamp(alpha - 5, 0, 255)
+        end
         return crossair_x+(newcrossairX-crossair_x)*0.1, crossair_y + (newcrossairY-crossair_y) * 0.1
+    end
+    alpha = math.Clamp(alpha + 5, 0, 255)
+    if alpha != 255 then
+        return ScrW()/2, ScrH()/2
     end
     if math.abs(newcrossairX-crossair_x) < 15 and math.abs(newcrossairY-crossair_y) < 15 then
         if not table.IsEmpty(scanenitys) and IsValid(ent) and getenittyscanpersentage(ent) >= 1 then
@@ -556,7 +601,8 @@ function crossairscanner_move(newcrossairX, newcrossairY, ent)
         end
         return newcrossairX, newcrossairY
     end
-    return crossair_x+(newcrossairX-crossair_x)*0.075, crossair_y + (newcrossairY-crossair_y) * 0.075
+    
+    return crossair_x+(newcrossairX-crossair_x)*0.055, crossair_y + (newcrossairY-crossair_y) * 0.055
 end
 
 function getenittyscanpersentage(ent) 
@@ -870,14 +916,14 @@ end
 hook.Add("HUDPaint", "DrawCompass", function()
     local ply = LocalPlayer()
     if not IsValid(ply) then return end
-
+    if not ply:GetNW2Bool("SpaceMarineHUD", false) then return end
     -- Kompass-Parameter
     local screenW = ScrW()
     local screenH = ScrH()
-    local compassWidth = 500
+    local compassWidth = 400
     local compassHeight = 30
     local compassX = (screenW - compassWidth) / 2
-    local compassY = 50
+    local compassY = 20
 
     local yaw = ply:EyeAngles().yaw
     yaw = (yaw + 360) % 360 -- Normalisieren
@@ -973,7 +1019,7 @@ hook.Add("HUDPaint", "DrawCompass", function()
     surface.DrawLine(screenW / 2, compassY, screenW / 2, compassY + compassHeight)
     render.SetStencilEnable(false)
         -- Kompass-Hintergrund
-    draw.RoundedBox(4, compassX, compassY, compassWidth, compassHeight, Color(  34, 145, 0, 173))
+    draw.RoundedBox(4, compassX, compassY, compassWidth, compassHeight, Color(  0, 0, 0, 99))
     
 
     -- Jede Richtung zeichnen
@@ -1086,6 +1132,8 @@ local color = Color(0,0,0)
 local members = {}
 local extendedview = false  
 hook.Add("HUDPaint", "Squadsystem" , function()
+    local ply = LocalPlayer()
+    if not ply:GetNW2Bool("SpaceMarineHUD", false) then return end
     if extendedview then extendedviewdraw() return end
     surface.SetDrawColor(0,0,0,99)
     surface.DrawRect(100,60,250, 325) 
@@ -1200,6 +1248,7 @@ net.Receive("updateaktivfunkBC", function()
 end)
 hook.Add("HUDPaint", "Funksystem", function()
     local ply = LocalPlayer()
+    if not ply:GetNW2Bool("SpaceMarineHUD", false) then return end
     local FunkNames = {"N/A", "N/A", "N/A"}
 
     if not ply.aktivefunkkanale then
@@ -1237,7 +1286,7 @@ hook.Add("HUDPaint", "Funksystem", function()
     
     surface.SetDrawColor(0,0,0,99)
     surface.DrawRect(ScrW()-400,90,250,40)
-    surface.SetDrawColor(20,172,0)
+    surface.SetDrawColor(0,0,0,99)
     surface.DrawOutlinedRect(ScrW()-400,90,250,40,3)
     surface.DrawRect(ScrW()-400+250/3-1.5,90,3,40)
     surface.DrawRect(ScrW()-400+250/3*2-1.5,90,3,40)
@@ -1250,7 +1299,7 @@ hook.Add("HUDPaint", "Funksystem", function()
     
 end)
 
-
+--[[
 if CLIENT then
     local imageMat = Material("Subtract.png", "smooth")
     local maskMat = Material("Rectangle 2.png", "smooth")
@@ -1328,3 +1377,4 @@ if CLIENT then
         surface.DrawTexturedRect(x, y, width, height)
     end)
 end
+]]
